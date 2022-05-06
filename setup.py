@@ -206,32 +206,30 @@ class ProjectInformation(object):
 
   def _ReadConfigureAc(self):
     """Reads configure.ac to initialize the project information."""
-    file_object = open("configure.ac", "rb")
-    if not file_object:
-      raise IOError("Unable to open: configure.ac")
+    with open("configure.ac", "rb") as file_object:
+      if not file_object:
+        raise IOError("Unable to open: configure.ac")
 
-    found_ac_init = False
-    found_library_name = False
-    for line in file_object.readlines():
-      line = line.strip()
-      if found_library_name:
-        library_version = line[1:-2]
-        if sys.version_info[0] >= 3:
-          library_version = library_version.decode("ascii")
-        self.library_version = library_version
-        break
+      found_ac_init = False
+      found_library_name = False
+      for line in file_object.readlines():
+        line = line.strip()
+        if found_library_name:
+          library_version = line[1:-2]
+          if sys.version_info[0] >= 3:
+            library_version = library_version.decode("ascii")
+          self.library_version = library_version
+          break
 
-      elif found_ac_init:
-        library_name = line[1:-2]
-        if sys.version_info[0] >= 3:
-          library_name = library_name.decode("ascii")
-        self.library_name = library_name
-        found_library_name = True
+        elif found_ac_init:
+          library_name = line[1:-2]
+          if sys.version_info[0] >= 3:
+            library_name = library_name.decode("ascii")
+          self.library_name = library_name
+          found_library_name = True
 
-      elif line.startswith(b"AC_INIT"):
-        found_ac_init = True
-
-    file_object.close()
+        elif line.startswith(b"AC_INIT"):
+          found_ac_init = True
 
     if not self.library_name or not self.library_version:
       raise RuntimeError(
@@ -242,30 +240,28 @@ class ProjectInformation(object):
     if not self.library_name:
       raise RuntimeError("Missing library name")
 
-    file_object = open("Makefile.am", "rb")
-    if not file_object:
-      raise IOError("Unable to open: Makefile.am")
+    with open("Makefile.am", "rb") as file_object:
+      if not file_object:
+        raise IOError("Unable to open: Makefile.am")
 
-    found_subdirs = False
-    for line in file_object.readlines():
-      line = line.strip()
-      if found_subdirs:
-        library_name, _, _ = line.partition(b" ")
-        if sys.version_info[0] >= 3:
-          library_name = library_name.decode("ascii")
+      found_subdirs = False
+      for line in file_object.readlines():
+        line = line.strip()
+        if found_subdirs:
+          library_name, _, _ = line.partition(b" ")
+          if sys.version_info[0] >= 3:
+            library_name = library_name.decode("ascii")
 
-        self.include_directories.append(library_name)
+          self.include_directories.append(library_name)
 
-        if library_name.startswith("lib"):
-          self.library_names.append(library_name)
+          if library_name.startswith("lib"):
+            self.library_names.append(library_name)
 
-        if library_name == self.library_name:
-          break
+          if library_name == self.library_name:
+            break
 
-      elif line.startswith(b"SUBDIRS"):
-        found_subdirs = True
-
-    file_object.close()
+        elif line.startswith(b"SUBDIRS"):
+          found_subdirs = True
 
     if not self.include_directories or not self.library_names:
       raise RuntimeError(
